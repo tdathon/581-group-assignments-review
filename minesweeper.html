@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minesweeper</title>
+
+<link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Tangerine">
+    <style>
+      body {
+        font-family: 'Tangerine', serif;
+        font-size: 25px;
+      }
+    </style>
+
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="c1">
+        <h1>Minesweeper</h1>
+        <div class="controls">
+        <div class="input">
+        <label for="mine_count">Number of Mines (5-25):</label>
+        <input type="number" id="mine-input" value="5" min="5" max="25">
+        </div>
+        <button id="str-bttn">Start Game</button>
+        </div>
+        <div class="status">
+            <div>Status: <span id="stat-idictr">Ready</span></div>
+            <div> Flags Left: <span id="flag-c">N/A</span></div>
+        </div>
+        <!-- This is where the game board is going to lay. This is the crux of the gamkds right here.-->
+        <div id="grid-c1">
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
