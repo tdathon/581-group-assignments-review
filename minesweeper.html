@@ -393,6 +393,29 @@
       }
     }
 
+    function shakeScreenWhenLose() {
+        const body = document.body;
+        const start = Date.now();
+
+        // x is how much we want to shake at the start
+        let x = 5;
+
+        const interval = setInterval(() => {
+            const ms = Date.now() - start;
+
+            if (ms >= 500) {
+                clearInterval(interval);
+                body.style.transform = "";
+                return;
+            }
+
+            body.style.transform = `translateX(${x}px)`;
+
+            // flip x and multiply by .9 so that it lessens out
+            x = -x * 0.9
+        }, 30);
+    }
+
     function updateUI() {
       flagCountElement.textContent = Math.max(0, gameState.mineCount - gameState.flagsPlaced);
       const span = statusIndicatorElement;
@@ -407,6 +430,7 @@
           span.classList.add('status-win');
           break;
         case 'loss':
+          shakeScreenWhenLose();
           span.textContent = 'Game Over: Loss';
           span.classList.add('status-loss');
           break;
