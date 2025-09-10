@@ -160,6 +160,11 @@ function endGame(isWin) {
     updateUI();
 }
 
+// Checks for the move being inside the grid
+function isValid(row, col) {
+    return (row >= 0) && (col >= 0) && (row < GRID_SIZE) && (col < GRID_SIZE);
+}
+
 // --- USER INTERFACE ---
 function renderBoard() {
     gridContainer.innerHTML = '';
