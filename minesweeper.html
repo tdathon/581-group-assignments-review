@@ -15,7 +15,6 @@
     </style>
 
     
-    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -37,6 +36,193 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    
+    <script>
+        // --- CONSTANTS ---
+    const GRID_SIZE = 10;
+
+    // --- DOM Elements ---
+    const gridContainer = document.getElementById('grid-c1');
+    const mineInputElement = document.getElementById('mine-input');
+    const startButton = document.getElementById('str-bttn');
+    const statusIndicatorElement = document.getElementById('status-indicator');
+    const flagCountElement = document.getElementById('flag-count');
+    console.log("Total mines used:", mineInputElement.value);
+    let gameState = {
+        board: [],
+        mineCount: 10,
+        status: 'ready', // The options tht we have here are 'ready', 'playing', 'win', 'loss'
+        firstClick: true
+    };
+
+    /** This is the first thing we always have to do ***/
+    function initializeBoard() {
+        gameState.board = [];
+        for (let r = 0; r < GRID_SIZE; r++) {
+            const row = [];
+            for (let c = 0; c < GRID_SIZE; c++) {
+                row.push({
+                    isMine: false,
+                    isRevealed: false,
+                    isFlagged: false,
+                    adjacentMines: 0
+                });
+            }
+            gameState.board.push(row);
+        }
+    }
+
+    /**
+    * Places mines randomly on the board, avoiding the first clicked cell. We need it to be random so that each time you play the agme it is a different experience
+    */
+    function placeMines(startRow, startCol) {
+        let minesToPlace = gameState.mineCount;
+        while (minesToPlace > 0) {
+            const r = Math.floor(Math.random() * GRID_SIZE);
+            const c = Math.floor(Math.random() * GRID_SIZE);
+
+            if ((r === startRow && c === startCol) || gameState.board[r][c].isMine) {
+                continue;
+            }
+            gameState.board[r][c].isMine = true;
+            minesToPlace--;
+        }
+    }
+
+
+    function startGame() {
+        gameState.mineCount = parseInt(mineInputElement.value);
+        gameState.status = 'playing';
+        gameState.firstClick = true;
+        initializeBoard();
+        renderBoard();
+        updateUI();
+    }
+
+    function revealCell(row, col) {
+        const cell = gameState.board[row][col];
+        if (cell.isRevealed) return;
+
+        if (cell.isMine) {
+            endGame(false); // Loss
+            return;
+        }
+
+        cell.isRevealed = true;
+    }
+
+    function endGame(isWin) {
+        gameState.status = isWin ? 'win' : 'loss';
+        // Reveal all mines
+        gameState.board.forEach(row => {
+            row.forEach(cell => {
+                if (cell.isMine) {
+                    cell.isRevealed = true;
+                }
+            });
+        });
+        updateUI();
+    }
+
+    function renderBoard() {
+        gridContainer.innerHTML = '';
+        gridContainer.style.gridTemplateColumns = `30px repeat(${GRID_SIZE}, 1fr)`;
+        gridContainer.style.gridTemplateRows = `30px repeat(${GRID_SIZE}, 1fr)`;
+
+        gridContainer.appendChild(document.createElement('div'));
+        for (let i = 0; i < GRID_SIZE; i++) {
+            const label = document.createElement('div');
+            label.className = 'grid-label';
+            label.textContent = String.fromCharCode(65 + i);
+            gridContainer.appendChild(label);
+        }
+
+        for (let r = 0; r < GRID_SIZE; r++) {
+            const label = document.createElement('div');
+            label.className = 'grid-label';
+            label.textContent = r + 1;
+            gridContainer.appendChild(label);
+
+            for (let c = 0; c < GRID_SIZE; c++) {
+                const cellElement = document.createElement('div');
+                cellElement.className = 'cell';
+                cellElement.dataset.row = r;
+                cellElement.dataset.col = c;
+                cellElement.innerHTML = `<div class="cell-content"></div>`;
+                gridContainer.appendChild(cellElement);
+            }
+        }
+    }
+
+    /**
+    * Updates the visual state of all cells on the board.
+    */
+    function updateBoardUI() {
+        for (let r = 0; r < GRID_SIZE; r++) {
+            for (let c = 0; c < GRID_SIZE; c++) {
+                const cell = gameState.board[r][c];
+                const cellElement = document.querySelector(`.cell[data-row='${r}'][data-col='${c}']`);
+                const cellContent = cellElement.firstChild;
+
+                cellElement.className = 'cell'; // Reset
+                cellContent.textContent = '';
+                
+                if (cell.isRevealed) {
+                    cellElement.classList.add('revealed');
+                    if (cell.isMine) {
+                        cellElement.classList.add('mine');
+                        cellContent.textContent = '💣';
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+    * Updates the status text and flag count.
+    */
+    function updateUI() {
+        console.log("testing", gameState.mineCount);
+        //flagCountElement.textContent = gameState.mineCount;
+        /*
+        const statusSpan = statusIndicatorElement;
+        
+        statusSpan.classList.remove('status-playing', 'status-win', 'status-loss');
+        if (gameState.status === 'playing') {
+            statusSpan.textContent = 'Playing';
+            statusSpan.classList.add('status-playing');
+        } else if (gameState.status === 'loss') {
+            statusSpan.textContent = 'Game Over: Loss';
+            statusSpan.classList.add('status-loss');
+        }
+        */
+        updateBoardUI();
+    }
+
+    /**
+    * Handles left-click on a cell.
+    */
+    function handleCellClick(event) {
+        const cellElement = event.target.closest('.cell');
+        if (!cellElement || gameState.status !== 'playing') return;
+
+        const row = parseInt(cellElement.dataset.row);
+        const col = parseInt(cellElement.dataset.col);
+
+        if (gameState.firstClick) {
+            gameState.firstClick = false;
+            placeMines(row, col);
+        }
+
+        revealCell(row, col);
+        updateUI();
+    }
+
+    // --- INITIALIZATION ---
+    startButton.addEventListener('click', startGame);
+    gridContainer.addEventListener('click', handleCellClick);
+    startGame();
+    </script>
 </body>
 </html>
+
