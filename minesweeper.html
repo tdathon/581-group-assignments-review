@@ -110,9 +110,6 @@
         color: #334155;    }
 
 
-
-        
-
     .status-display span { font-weight: 600; }
     .status-playing { color: #2563eb; }
     .status-win { color: #16a34a; }
@@ -188,8 +185,8 @@
 
     <div class="controls">
       <div class="input-group">
-        <label for="mine-input">Number of Mines (5–25):</label>
-        <input type="number" id="mine-input" value="10" min="5" max="25" />
+        <label for="mine-input">Number of Mines (10–20):</label>
+        <input type="number" id="mine-input" value="10" min="10" max="20" />
       </div>
       <button id="start-button">Start Game</button>
     </div>
@@ -342,21 +339,19 @@
       // top-left blank header
       gridContainer.appendChild(document.createElement('div'));
 
-      
-      // Creates top header: 1, 2, 3... (Columns)
+      // top A..J
       for (let i = 0; i < GRID_SIZE; i++) {
         const label = document.createElement('div');
         label.className = 'grid-label';
-        label.textContent = i + 1; // Changed from letters to numbers
+        label.textContent = String.fromCharCode(65 + i);
         gridContainer.appendChild(label);
       }
 
-      // Creates side header and cells for each row
+      // rows + cells
       for (let r = 0; r < GRID_SIZE; r++) {
-        // Side header: A, B, C... (Rows)
         const label = document.createElement('div');
         label.className = 'grid-label';
-        label.textContent = String.fromCharCode(65 + r); // Changed from numbers to letters
+        label.textContent = r + 1;
         gridContainer.appendChild(label);
 
         for (let c = 0; c < GRID_SIZE; c++) {
@@ -368,7 +363,6 @@
           gridContainer.appendChild(cellElement);
         }
       }
-      
     }
 
     function updateBoardUI() {
