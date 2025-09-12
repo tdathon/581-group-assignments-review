@@ -14,6 +14,15 @@ The objective is to uncover all non-mine cells while avoiding detonating mines. 
 
 ---
 
+## How To Install and Run
+
+* run ```git clone git@github.com:l33tdaniel/581-group-assignments.git```
+* Open the folder and right click on the file minesweeper.html
+* Open with your browser
+* Enjoy Playing!
+
+---
+
 ## Requirements
 
 ### Game Setup

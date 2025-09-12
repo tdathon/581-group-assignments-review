@@ -5,15 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Minesweeper</title>
 
-  <!-- Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Tangerine">
 
-  <!-- implemeting the whole UI in pure css-->
 <style>
     * { box-sizing: border-box; }
     body {
-        font-family: 'Inter', sans-serif;
-        background-color: #e2e8f0;
+        font-family: 'Tangerine', sans-serif;
+        font-size: 35px;
+        background-color: #00FFFF;
         color: #1e293b;
         display: flex;
         align-items: center;
@@ -22,8 +22,6 @@
         padding: 1rem;
         margin: 0;
         touch-action: manipulation;    }
-
-
 
     h1 {
         text-align: center;
@@ -66,7 +64,7 @@
         padding: 0.5rem;
         border: 1px solid #cbd5e1;
         border-radius: 0.375rem;
-        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadowing for better visibility for user */
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); 
         font-size: 1rem;
     }
 
@@ -84,13 +82,10 @@
         background-color: #2563eb;
         color: white;
         font-weight: 600;
-
-
         border-radius: 0.5rem;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         border: none;
         cursor: pointer;
-
         transition: background-color 0.2s, transform 0.2s;
     }
     #start-button:hover {
@@ -101,21 +96,15 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-
-
         background-color: #f1f5f9;
         padding: 0.75rem;
         border-radius: 0.5rem;
         margin-bottom: 1rem;
         color: #334155;    }
-
-
     .status-display span { font-weight: 600; }
     .status-playing { color: #2563eb; }
     .status-win { color: #16a34a; }
     .status-loss { color: #dc2626; }
-    
-    
     #grid-container {
         background-color: #1af065;
         padding: 0.5rem;
@@ -124,8 +113,6 @@
         display: grid;
         gap: 2px;
     }
-
-
     .grid-label {
         display: flex;
         align-items: center;
@@ -133,8 +120,6 @@
         font-weight: 600;
         color: #1e293b;
     }
-
-
     
     .cell {
         width: 100%;
@@ -165,8 +150,6 @@
         font-size: 1.25rem;
         font-weight: bold;
     }
-
-
     .c1 { color: #3b82f6; } 
     .c2 { color: #00ffd0; } 
     .c3 { color: #fe0000; }
@@ -185,8 +168,8 @@
 
     <div class="controls">
       <div class="input-group">
-        <label for="mine-input">Number of Mines (10–20):</label>
-        <input type="number" id="mine-input" value="10" min="10" max="20" />
+        <label for="mine-input">Number of Mines (5–25):</label>
+        <input type="number" id="mine-input" value="10" min="5" max="25" />
       </div>
       <button id="start-button">Start Game</button>
     </div>
@@ -203,14 +186,12 @@
   <script>
     // --- CONSTANTS ---
     const GRID_SIZE = 10;
-
     // --- DOM Elements (aligned to CSS) ---
     const gridContainer = document.getElementById('grid-container');
     const mineInputElement = document.getElementById('mine-input');
     const startButton = document.getElementById('start-button');
     const statusIndicatorElement = document.getElementById('status-indicator');
     const flagCountElement = document.getElementById('flags-left');
-
     // --- GAME STATE OBJECT ---
     let gameState = {
       board: [],
