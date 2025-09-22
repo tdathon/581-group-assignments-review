@@ -9,7 +9,7 @@
           href="https://fonts.googleapis.com/css?family=Tangerine">
 
 <style>
-/* CSS by Jay Patel */
+/* CSS by Jay Patel (09/10)*/
 
 /* Global */
     * { box-sizing: border-box; }
@@ -176,7 +176,7 @@
 
 </style>
 </head>
-<!-- Brett Balquist: HTML skeleton-->
+<!-- Brett Balquist: HTML skeleton (09/09)-->
 <body>
 
   <div class="container">
@@ -222,7 +222,9 @@
 
     /**
     Daniel Neugent: Initializes the board
-    No inputs, output is the board on the screen of the correct size
+    Inputs: None
+    Output:No return value but UI change (board on the screen of the correct size)
+    Date: 09/10
     **/
     function initializeBoard() {
       gameState.board = Array.from({ length: GRID_SIZE }, () =>
@@ -237,8 +239,9 @@
 
     /**
     Daniel Neugent: Places the mines (after the click)
-    Inputs is the start row and column, Function does not anything 
-    but output are mines stored for future use
+    Inputs: start row and column, 
+    Output: No return val but gamestate is changed
+    Date: 09/10
     **/
     function placeMines(startRow, startCol) {
       let minesToPlace = gameState.mineCount;
@@ -254,7 +257,8 @@
     /**
     Tej Gumaste: For each tile it calculates how many mines are next to it
     Inputs: None
-    but output are mines stored for future use
+    Output: No return val but gamestate is changed
+    Date: 09/10
     **/
     function calculateAdjacentMines() {
 
@@ -283,6 +287,7 @@
     Daniel Neugent and Tej Gumaste: Starts the game
     Inputs: None
     Outputs: No return but starts the game
+    Date: 09/10
     **/
     function startGame() {
       // clamp input to 5..25 just in case
@@ -305,6 +310,7 @@
     updates the game state accordingly
     Inputs: Row and column of cell clicked
     Outputs: No return but game state and UI are changed
+    Date: 09/10
     **/
     function revealCell(row, col) {
       if (!isValid(row, col)) return;
@@ -335,6 +341,7 @@
     updates the game state accordingly
     Inputs: row and column of cell clicked
     Outputs: No return but game state and UI are changed
+    Date: 09/10
     **/
     function toggleFlag(row, col) {
       const cell = gameState.board[row][col];
@@ -352,6 +359,7 @@
     Tej Gumaste: Checks to see if the game is won
     Inputs: None
     Outputs: None
+    Date: 09/10
     **/
     function checkWinCondition() {
       const nonMineCells = (GRID_SIZE * GRID_SIZE) - gameState.mineCount;
@@ -364,6 +372,7 @@
     Daniel Neugent: Ends the game accordingly
     Inputs: Boolean var about whether the game was won or loss
     Outputs: None
+    Date: 09/10
     **/
     function endGame(isWin) {
       gameState.status = isWin ? 'win' : 'loss';
@@ -380,6 +389,7 @@
     Arnav Jain: Checks if a move is valid
     Inputs: Row and col
     Outputs: Boolean
+    Date: 09/10 initially, was accidentially overwritten so readded 9/21
     **/
     function isValid(row, col) {
         return (row >= 0) && (col >= 0) && (row < GRID_SIZE) && (col < GRID_SIZE);
@@ -390,6 +400,7 @@
     Daniel Neugent: Renders the full board
     Inputs: None
     Outputs: None but changes UI
+    Date: 09/10
     **/
     function renderBoard() {
       gridContainer.innerHTML = '';
@@ -429,6 +440,7 @@
     Daniel Neugent and Tej Gumaste: Helps render the cells in the board
     Inputs: None
     Outputs: None but changes UI
+    Date: 09/10
     **/
     function updateBoardUI() {
       for (let r = 0; r < GRID_SIZE; r++) {
@@ -462,6 +474,7 @@
     Arnav Jain: SHakes the screen upon loss
     Inputs: None
     Outputs: None 
+    Date: 09/10
     **/
     function shakeScreenWhenLose() {
         const body = document.body;
@@ -490,6 +503,7 @@
     Daniel Neugent and Tej Gumaste: Updates the status text and flag count
     Inputs: None
     Outputs: None but changes UI
+    Date: 09/10
     **/
     function updateUI() {
       flagCountElement.textContent = Math.max(0, gameState.mineCount - gameState.flagsPlaced);
@@ -521,6 +535,7 @@
     Tej Gumaste: Handls cell left click
     Inputs: event
     Outputs: None but changes UI and game state
+    Date: 09/10
     **/
     function handleCellClick(event) {
       const cellElement = event.target.closest('.cell');
@@ -541,6 +556,7 @@
     Daniel Neugent: Handls cell right click
     Inputs: event
     Outputs: None but changes UI and game state
+    Date: 09/10
     **/
     function handleCellRightClick(event) {
       event.preventDefault();
