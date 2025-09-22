@@ -9,7 +9,11 @@
           href="https://fonts.googleapis.com/css?family=Tangerine">
 
 <style>
+/* CSS by Jay Patel */
+
+/* Global */
     * { box-sizing: border-box; }
+/* Body */
     body {
         font-family: 'Tangerine', sans-serif;
         font-size: 35px;
@@ -23,6 +27,8 @@
         margin: 0;
         touch-action: manipulation;    }
 
+
+/* Heading */
     h1 {
         text-align: center;
         font-size: 2.25rem;
@@ -30,6 +36,7 @@
         margin-top: 0;
         margin-bottom: 1rem;
     }
+/* Number input and start button */
     .controls {
         display: grid;
         grid-template-columns: 1fr;
@@ -40,6 +47,7 @@
         border-radius: 0.5rem;
         border: 1px solid #e2e8f0;
     }
+/* Container for the game */
     .container {
         width: 100%;
         max-width: 512px;
@@ -52,6 +60,7 @@
     @media (min-width: 768px) {
         .controls { grid-template-columns: 1fr 1fr; align-items: flex-end; }
     }
+/* For mines user input */
     .input-group { display: flex; flex-direction: column; }
     .input-group label {
         font-size: 0.875rem;
@@ -76,6 +85,7 @@
         border-color: #3b82f6;
         box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
     }
+/* For the start button */
     #start-button {
         width: 100%;
         padding: 0.6rem 1rem;
@@ -92,6 +102,7 @@
         background-color: #1d4ed8;
         transform: scale(1.02);
     }
+/* For the bar below start that shows victory or playing or loss */
     .status-display {
         display: flex;
         justify-content: space-between;
@@ -105,6 +116,7 @@
     .status-playing { color: #2563eb; }
     .status-win { color: #16a34a; }
     .status-loss { color: #dc2626; }
+/* For the actual game */
     #grid-container {
         background-color: #1af065;
         padding: 0.5rem;
@@ -113,6 +125,7 @@
         display: grid;
         gap: 2px;
     }
+/* For the axes of the game */
     .grid-label {
         display: flex;
         align-items: center;
@@ -121,6 +134,7 @@
         color: #1e293b;
     }
     
+/* For each cell in the grid, subcategory is self-explanitory */
     .cell {
         width: 100%;
         padding-bottom: 100%;
@@ -141,6 +155,7 @@
         }
     
     
+/* For the image or text inside the cell */
     .cell-content {
         position: absolute;
         top: 0; left: 0; right: 0; bottom: 0;
@@ -161,6 +176,7 @@
 
 </style>
 </head>
+<!-- Brett Balquist: HTML skeleton-->
 <body>
 
   <div class="container">
@@ -203,6 +219,11 @@
     };
 
     // --- BOARD MANAGER ---
+
+    /**
+    Daniel Neugent: Initializes the board
+    No inputs, output is the board on the screen of the correct size
+    **/
     function initializeBoard() {
       gameState.board = Array.from({ length: GRID_SIZE }, () =>
         Array.from({ length: GRID_SIZE }, () => ({
@@ -214,6 +235,11 @@
       );
     }
 
+    /**
+    Daniel Neugent: Places the mines (after the click)
+    Inputs is the start row and column, Function does not anything 
+    but output are mines stored for future use
+    **/
     function placeMines(startRow, startCol) {
       let minesToPlace = gameState.mineCount;
       while (minesToPlace > 0) {
@@ -225,7 +251,13 @@
       }
     }
 
+    /**
+    Tej Gumaste: For each tile it calculates how many mines are next to it
+    Inputs: None
+    but output are mines stored for future use
+    **/
     function calculateAdjacentMines() {
+
       for (let r = 0; r < GRID_SIZE; r++) {
         for (let c = 0; c < GRID_SIZE; c++) {
           if (gameState.board[r][c].isMine) continue;
@@ -234,7 +266,7 @@
             for (let dc = -1; dc <= 1; dc++) {
               const nr = r + dr;
               const nc = c + dc;
-              if (nr >= 0 && nr < GRID_SIZE && nc >= 0 && nc < GRID_SIZE && gameState.board[nr][nc].isMine) {
+              if (isValid(nr, nc) && gameState.board[nr][nc].isMine) {
                 count++;
               }
             }
@@ -245,6 +277,13 @@
     }
 
     // --- GAME LOGIC ---
+
+
+    /**
+    Daniel Neugent and Tej Gumaste: Starts the game
+    Inputs: None
+    Outputs: No return but starts the game
+    **/
     function startGame() {
       // clamp input to 5..25 just in case
       const requested = parseInt(mineInputElement.value, 10);
@@ -260,8 +299,15 @@
       updateUI();
     }
 
+
+    /**
+    Daniel Neugent and Tej Gumaste: Shows contents of the cell upon click and 
+    updates the game state accordingly
+    Inputs: Row and column of cell clicked
+    Outputs: No return but game state and UI are changed
+    **/
     function revealCell(row, col) {
-      if (row < 0 || row >= GRID_SIZE || col < 0 || col >= GRID_SIZE) return;
+      if (!isValid(row, col)) return;
       const cell = gameState.board[row][col];
       if (cell.isRevealed || cell.isFlagged) return;
 
@@ -284,6 +330,12 @@
       checkWinCondition();
     }
 
+    /**
+    Tej Gumaste: Changes the input cell to have a flag
+    updates the game state accordingly
+    Inputs: row and column of cell clicked
+    Outputs: No return but game state and UI are changed
+    **/
     function toggleFlag(row, col) {
       const cell = gameState.board[row][col];
       if (cell.isRevealed) return;
@@ -296,6 +348,11 @@
       }
     }
 
+    /**
+    Tej Gumaste: Checks to see if the game is won
+    Inputs: None
+    Outputs: None
+    **/
     function checkWinCondition() {
       const nonMineCells = (GRID_SIZE * GRID_SIZE) - gameState.mineCount;
       if (gameState.revealedCells === nonMineCells) {
@@ -303,6 +360,11 @@
       }
     }
 
+    /**
+    Daniel Neugent: Ends the game accordingly
+    Inputs: Boolean var about whether the game was won or loss
+    Outputs: None
+    **/
     function endGame(isWin) {
       gameState.status = isWin ? 'win' : 'loss';
       gameState.board.forEach(row => row.forEach(cell => {
@@ -311,7 +373,24 @@
       updateUI();
     }
 
+
+
+
+    /**
+    Arnav Jain: Checks if a move is valid
+    Inputs: Row and col
+    Outputs: Boolean
+    **/
+    function isValid(row, col) {
+        return (row >= 0) && (col >= 0) && (row < GRID_SIZE) && (col < GRID_SIZE);
+    }
     // --- USER INTERFACE ---
+
+    /**
+    Daniel Neugent: Renders the full board
+    Inputs: None
+    Outputs: None but changes UI
+    **/
     function renderBoard() {
       gridContainer.innerHTML = '';
       gridContainer.style.gridTemplateColumns = `30px repeat(${GRID_SIZE}, 1fr)`;
@@ -346,6 +425,11 @@
       }
     }
 
+    /**
+    Daniel Neugent and Tej Gumaste: Helps render the cells in the board
+    Inputs: None
+    Outputs: None but changes UI
+    **/
     function updateBoardUI() {
       for (let r = 0; r < GRID_SIZE; r++) {
         for (let c = 0; c < GRID_SIZE; c++) {
@@ -374,6 +458,11 @@
       }
     }
 
+    /**
+    Arnav Jain: SHakes the screen upon loss
+    Inputs: None
+    Outputs: None 
+    **/
     function shakeScreenWhenLose() {
         const body = document.body;
         const start = Date.now();
@@ -397,6 +486,11 @@
         }, 30);
     }
 
+    /**
+    Daniel Neugent and Tej Gumaste: Updates the status text and flag count
+    Inputs: None
+    Outputs: None but changes UI
+    **/
     function updateUI() {
       flagCountElement.textContent = Math.max(0, gameState.mineCount - gameState.flagsPlaced);
       const span = statusIndicatorElement;
@@ -422,6 +516,12 @@
     }
 
     // --- INPUT HANDLER ---
+
+    /**
+    Tej Gumaste: Handls cell left click
+    Inputs: event
+    Outputs: None but changes UI and game state
+    **/
     function handleCellClick(event) {
       const cellElement = event.target.closest('.cell');
       if (!cellElement || gameState.status !== 'playing') return;
@@ -437,6 +537,11 @@
       updateUI();
     }
 
+    /**
+    Daniel Neugent: Handls cell right click
+    Inputs: event
+    Outputs: None but changes UI and game state
+    **/
     function handleCellRightClick(event) {
       event.preventDefault();
       const cellElement = event.target.closest('.cell');
