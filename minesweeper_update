@@ -187,8 +187,18 @@ New file
 
     <div class="controls">
       <div class="input-group">
-        <label for="mine-input">Number of Mines (5–25):</label>
-        <input type="number" id="mine-input" value="10" min="5" max="25" />
+        <label for="mine-input">Number of Mines (10–20):</label>
+<!-- Alec Slavik: fix to the mine numbers (originally 5-25 now correct 10-20 (9/24)-->
+        <input type="number" id="mine-input" value="10" min="10" max="20" />
+<!-- Alec Slavik, removing user typing in box, only ticker allowed to stay in range) (9/24)-->
+<script>
+  const mineInput = document.getElementById('mine-input');
+
+  // Stops typing, only stepper allowed
+  mineInput.addEventListener('keydown', (e) => {
+    e.preventDefault();
+  });
+</script>
       </div>
       <button id="start-button">Start Game</button>
     </div>
@@ -295,7 +305,7 @@ New file
     function startGame() {
       // clamp input to 5..25 just in case
       const requested = parseInt(mineInputElement.value, 10);
-      gameState.mineCount = Math.max(5, Math.min(25, isNaN(requested) ? 10 : requested));
+      gameState.mineCount = Math.max(10, Math.min(20, isNaN(requested) ? 10 : requested));
 
       gameState.flagsPlaced = 0;
       gameState.revealedCells = 0;
