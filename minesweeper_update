@@ -72,16 +72,17 @@ New file
 
         margin-bottom: 0.25rem;    }
 
-    .input-group input {
+    .input-group input, .input-group select {
         padding: 0.5rem;
         border: 1px solid #cbd5e1;
         border-radius: 0.375rem;
         box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); 
         font-size: 1rem;
+        background: white;
     }
 
 
-    .input-group input:focus {
+    .input-group input:focus, .input-group select:focus {
         outline: 2px solid transparent;
         outline-offset: 2px;
 
@@ -200,6 +201,16 @@ New file
   });
 </script>
       </div>
+
+      <!-- NEW: AI mode dropdown (minimal addition) -->
+      <div class="input-group">
+        <label for="ai-mode">Opponent:</label>
+        <select id="ai-mode">
+          <option value="none">No AI</option>
+          <option value="medium">Medium AI</option>
+        </select>
+      </div>
+
       <button id="start-button">Start Game</button>
     </div>
 
@@ -221,6 +232,8 @@ New file
     const startButton = document.getElementById('start-button');
     const statusIndicatorElement = document.getElementById('status-indicator');
     const flagCountElement = document.getElementById('flags-left');
+    const aiModeElement = document.getElementById('ai-mode'); // NEW
+
     // --- GAME STATE OBJECT ---
     let gameState = {
       board: [],
@@ -228,7 +241,11 @@ New file
       flagsPlaced: 0,
       revealedCells: 0,
       status: 'ready', // 'ready', 'playing', 'win', 'loss'
-      firstClick: true
+      firstClick: true,
+      // NEW: AI + turn state
+      aiMode: 'none',        // 'none' | 'medium'
+      nextToMove: 'user',    // 'user' | 'ai'
+      aiBusy: false          // block clicks while AI is moving
     };
 
     // --- BOARD MANAGER ---
@@ -312,6 +329,11 @@ New file
       gameState.status = 'playing';
       gameState.firstClick = true;
 
+      // NEW: reset AI/turns
+      gameState.aiMode = aiModeElement ? aiModeElement.value : 'none';
+      gameState.nextToMove = 'user';
+      gameState.aiBusy = false;
+
       initializeBoard();
       renderBoard();
       updateUI();
@@ -325,13 +347,14 @@ New file
     Outputs: No return but game state and UI are changed
     Date: 09/10
     **/
-    function revealCell(row, col) {
+    function revealCell(row, col, fromAI = false) {
       if (!isValid(row, col)) return;
       const cell = gameState.board[row][col];
       if (cell.isRevealed || cell.isFlagged) return;
 
       if (cell.isMine) {
-        endGame(false);
+        // NEW: if AI hits a mine, player wins; if user hits, player loses
+        endGame(fromAI ? true : false);
         return;
       }
 
@@ -342,7 +365,7 @@ New file
         for (let dr = -1; dr <= 1; dr++) {
           for (let dc = -1; dc <= 1; dc++) {
             if (dr === 0 && dc === 0) continue;
-            revealCell(row + dr, col + dc);
+            revealCell(row + dr, col + dc, fromAI);
           }
         }
       }
@@ -407,6 +430,33 @@ New file
     function isValid(row, col) {
         return (row >= 0) && (col >= 0) && (row < GRID_SIZE) && (col < GRID_SIZE);
     }
+
+    // --- Helpers for AI (minimal, self-contained) ---
+    function getNeighbors(r, c) {
+      const out = [];
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          const nr = r + dr, nc = c + dc;
+          if (isValid(nr, nc)) out.push({ r: nr, c: nc });
+        }
+      }
+      return out;
+    }
+
+    function isCovered(r, c) {
+      const cell = gameState.board[r][c];
+      return !cell.isRevealed;
+    }
+    function isFlagged(r, c) {
+      return gameState.board[r][c].isFlagged;
+    }
+    function getNumberAt(r, c) {
+      const cell = gameState.board[r][c];
+      if (cell.isRevealed && !cell.isMine) return cell.adjacentMines;
+      return null;
+    }
+
     // --- USER INTERFACE ---
 
     /**
@@ -524,7 +574,9 @@ New file
       span.className = '';
       switch (gameState.status) {
         case 'playing':
-          span.textContent = 'Playing';
+          span.textContent = (gameState.aiMode === 'none')
+            ? 'Playing'
+            : (gameState.nextToMove === 'user' ? 'Your turn' : 'AI thinking…');
           span.classList.add('status-playing');
           break;
         case 'win':
@@ -553,6 +605,10 @@ New file
     function handleCellClick(event) {
       const cellElement = event.target.closest('.cell');
       if (!cellElement || gameState.status !== 'playing') return;
+
+      // NEW: only allow user action when it's user's turn and AI not busy
+      if (gameState.aiMode !== 'none' && (gameState.aiBusy || gameState.nextToMove !== 'user')) return;
+
       const row = parseInt(cellElement.dataset.row, 10);
       const col = parseInt(cellElement.dataset.col, 10);
 
@@ -561,8 +617,14 @@ New file
         placeMines(row, col);
         calculateAdjacentMines();
       }
-      revealCell(row, col);
+      revealCell(row, col, /*fromAI*/ false);
       updateUI();
+
+      // NEW: pass the turn to AI
+      if (gameState.status === 'playing' && gameState.aiMode !== 'none') {
+        gameState.nextToMove = 'ai';
+        maybeRunAI();
+      }
     }
 
     /**
@@ -575,16 +637,127 @@ New file
       event.preventDefault();
       const cellElement = event.target.closest('.cell');
       if (!cellElement || gameState.status !== 'playing') return;
+
+      // NEW: block flags during AI move
+      if (gameState.aiMode !== 'none' && (gameState.aiBusy || gameState.nextToMove !== 'user')) return;
+
       const row = parseInt(cellElement.dataset.row, 10);
       const col = parseInt(cellElement.dataset.col, 10);
       toggleFlag(row, col);
       updateUI();
     }
 
+    // --- AI TURN LOOP (minimal integration) ---
+    function maybeRunAI() {
+      if (gameState.status !== 'playing' || gameState.aiMode === 'none' || gameState.nextToMove !== 'ai') return;
+      gameState.aiBusy = true;
+      updateUI();
+
+      // tiny delay for UX
+      setTimeout(() => {
+        if (gameState.aiMode === 'medium') aiMediumMove();
+
+        // after AI finishes (unless game ended), give turn back to user
+        if (gameState.status === 'playing') {
+          gameState.nextToMove = 'user';
+        }
+        gameState.aiBusy = false;
+        updateUI();
+      }, 120);
+    }
+
+    // Medium AI:
+    // 1) Deterministic safe moves from numbered cells:
+    //    If flags == number, other covered neighbors are safe -> reveal them.
+    // 2) If none, pick the covered cell with lowest naive risk estimate; if all unconstrained, pick random.
+    function aiMediumMove() {
+      // AI never moves before first mines placed; ensure at least one user click happened.
+      if (gameState.firstClick) return;
+
+      // Gather deterministic safe cells
+      const safe = new Set();
+      for (let r = 0; r < GRID_SIZE; r++) {
+        for (let c = 0; c < GRID_SIZE; c++) {
+          const n = getNumberAt(r, c);
+          if (n === null) continue;
+          const neigh = getNeighbors(r, c);
+          let flags = 0;
+          const covered = [];
+          for (const { r: nr, c: nc } of neigh) {
+            if (isFlagged(nr, nc)) flags++;
+            else if (isCovered(nr, nc)) covered.push(`${nr},${nc}`);
+          }
+          if (flags === n && covered.length > 0) {
+            covered.forEach(k => safe.add(k));
+          }
+        }
+      }
+
+      // Prefer revealing deterministic safe cells
+      if (safe.size > 0) {
+        for (const key of safe) {
+          const [rStr, cStr] = key.split(',');
+          const r = parseInt(rStr, 10), c = parseInt(cStr, 10);
+          if (gameState.status !== 'playing') break;
+          if (isCovered(r, c) && !isFlagged(r, c)) {
+            revealCell(r, c, /*fromAI*/ true);
+          }
+        }
+        return;
+      }
+
+      // Otherwise: compute a simple risk score for each covered-unflagged cell:
+      // For each neighboring revealed number cell, estimate local risk =
+      //   (number - flagsAroundThatNumber) / (coveredAroundThatNumber)
+      // Cell risk = average of local risks from all neighboring number cells. If no constraints, risk = 1.
+      let candidates = [];
+      for (let r = 0; r < GRID_SIZE; r++) {
+        for (let c = 0; c < GRID_SIZE; c++) {
+          if (!isCovered(r, c) || isFlagged(r, c)) continue;
+          const neighbors = getNeighbors(r, c);
+          let riskSum = 0, contrib = 0;
+          for (const { r: nr, c: nc } of neighbors) {
+            const n = getNumberAt(nr, nc);
+            if (n === null) continue;
+            const nn = getNeighbors(nr, nc);
+            let flags = 0, cov = 0;
+            for (const { r: xr, c: xc } of nn) {
+              if (isFlagged(xr, xc)) flags++;
+              else if (isCovered(xr, xc)) cov++;
+            }
+            const remaining = n - flags;
+            if (cov > 0 && remaining >= 0) {
+              riskSum += remaining / cov;
+              contrib++;
+            }
+          }
+          const risk = contrib > 0 ? (riskSum / contrib) : 1.0;
+          candidates.push({ r, c, risk });
+        }
+      }
+
+      if (candidates.length === 0) return;
+
+      // Choose the lowest risk; if several, pick one of them randomly
+      candidates.sort((a, b) => a.risk - b.risk);
+      const bestRisk = candidates[0].risk;
+      const bestGroup = candidates.filter(x => Math.abs(x.risk - bestRisk) < 1e-9);
+      const pick = bestGroup[(Math.random() * bestGroup.length) | 0];
+
+      // Reveal the chosen cell
+      revealCell(pick.r, pick.c, /*fromAI*/ true);
+    }
+
     // --- INITIALIZATION ---
     startButton.addEventListener('click', startGame);
     gridContainer.addEventListener('click', handleCellClick);
     gridContainer.addEventListener('contextmenu', handleCellRightClick);
+
+    if (aiModeElement) {
+      aiModeElement.addEventListener('change', () => {
+        gameState.aiMode = aiModeElement.value;
+      });
+    }
 
     startGame();
   </script>
