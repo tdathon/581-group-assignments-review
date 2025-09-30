@@ -207,6 +207,7 @@ New file
         <label for="ai-mode">Opponent:</label>
         <select id="ai-mode">
           <option value="none">No AI</option>
+          <option value="easy">Easy AI</option>
           <option value="medium">Medium AI</option>
         </select>
       </div>
@@ -655,7 +656,8 @@ New file
 
       // tiny delay for UX
       setTimeout(() => {
-        if (gameState.aiMode === 'medium') aiMediumMove();
+        if (gameState.aiMode === 'easy') aiEasyMove();
+        else if (gameState.aiMode === 'medium') aiMediumMove();
 
         // after AI finishes (unless game ended), give turn back to user
         if (gameState.status === 'playing') {
@@ -664,6 +666,19 @@ New file
         gameState.aiBusy = false;
         updateUI();
       }, 120);
+    }
+    //Easy AI function
+    function aiEasyMove() {
+      if (gameState.firstClick) return;
+      const covered = [];
+      for (let r = 0; r < GRID_SIZE; r++) {
+        for (let c = 0; c < GRID_SIZE; c++) {
+          if (isCovered(r, c) && !isFlagged(r, c)) covered.push({ r, c });
+        }
+      }
+      if (covered.length === 0) return;
+      const pick = covered[(Math.random() * covered.length) | 0];
+      revealCell(pick.r, pick.c, true);
     }
 
     // Medium AI:
