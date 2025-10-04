@@ -234,6 +234,45 @@
     const flagCountElement = document.getElementById('flags-left');
     const aiModeElement = document.getElementById('ai-mode');
 
+    // --- SOUND EFFECTS ---
+    // Files expected in ./sounds:
+    // - clicksound.mp3, flagsound.mp3, winsound.mp3, losesound.mp3
+    const sfx = {
+      click: new Audio('sounds/clicksound.mp3'),
+      flag:  new Audio('sounds/flagsound.mp3'),
+      win:   new Audio('sounds/winsound.mp3'),
+      lose:  new Audio('sounds/losesound.mp3')
+    };
+
+    // Preload (no crossOrigin set, so it works with file://)
+    Object.values(sfx).forEach(a => { a.preload = 'auto'; });
+
+    // Play helper: clone so rapid repeats can overlap
+    function playSFX(name) {
+      const base = sfx[name];
+      if (!base) return;
+      try {
+        const node = base.cloneNode(true);
+        node.currentTime = 0;
+        node.play().catch(() => {});
+      } catch (_) {}
+    }
+
+    // Optional: prime audio on first user gesture to satisfy autoplay rules
+    let sfxPrimed = false;
+    function primeSFX() {
+      if (sfxPrimed) return;
+      sfxPrimed = true;
+      const silent = sfx.click.cloneNode(true);
+      silent.volume = 0;
+      silent.play().catch(() => {});
+      setTimeout(() => { try { silent.pause(); } catch(_){} }, 50);
+    }
+    // Prime on the very first click or key press anywhere
+    window.addEventListener('click', primeSFX, { once: true, capture: true });
+    window.addEventListener('keydown', primeSFX, { once: true, capture: true });
+
+
     // --- GAME STATE OBJECT ---
     let gameState = {
       board: [],
@@ -367,6 +406,8 @@
       gameState.board.forEach(row => row.forEach(cell => {
         if (cell.isMine) cell.isRevealed = true;
       }));
+      // --- SFX: win/lose (added, no logic change) ---
+      playSFX(isWin ? 'win' : 'lose');
       updateUI();
     }
 
@@ -521,6 +562,9 @@
       // only allow user action when it's user's turn and AI not busy
       if (gameState.aiMode !== 'none' && (gameState.aiBusy || gameState.nextToMove !== 'user')) return;
 
+      // --- SFX: user clicked a tile (added, no logic change) ---
+      playSFX('click');
+
       const row = parseInt(cellElement.dataset.row, 10);
       const col = parseInt(cellElement.dataset.col, 10);
 
@@ -550,7 +594,17 @@
 
       const row = parseInt(cellElement.dataset.row, 10);
       const col = parseInt(cellElement.dataset.col, 10);
+
+      // capture state before toggling to know if a flag was actually placed
+      const wasFlagged = gameState.board[row][col].isFlagged;
+
       toggleFlag(row, col);
+
+      // --- SFX: flag placed (added, no logic change) ---
+      if (!wasFlagged && gameState.board[row][col].isFlagged) {
+        playSFX('flag');
+      }
+
       updateUI();
     }
 
