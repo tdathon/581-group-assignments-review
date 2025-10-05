@@ -644,69 +644,73 @@
     }
 
     // --- MEDIUM AI ---
-    // 1) Deterministic safe moves from numbered cells
-    // 2) Else pick lowest-risk covered cell based on naive constraints
+    // Rule 1: If number of hidden neighbors equals cell's number (minus flags), flag all hidden neighbors
+    // Rule 2: If number of flagged neighbors equals cell's number, open all other hidden neighbors
+    // Else: Pick a random hidden cell
     function aiMediumMove() {
       if (gameState.firstClick) return;
 
-      const safe = new Set();
       for (let r = 0; r < GRID_SIZE; r++) {
         for (let c = 0; c < GRID_SIZE; c++) {
           const n = getNumberAt(r, c);
-          if (n === null) continue;
+          if (n === null || n === 0) continue;
           const neigh = getNeighbors(r, c);
-          let flags = 0;
-          const covered = [];
+          let flagCount = 0;
+          const hidden = [];
           for (const { r: nr, c: nc } of neigh) {
-            if (isFlagged(nr, nc)) flags++;
-            else if (isCovered(nr, nc)) covered.push(`${nr},${nc}`);
+            if (isFlagged(nr, nc)) {
+              flagCount++;
+            } else if (isCovered(nr, nc)) {
+              hidden.push({ r: nr, c: nc });
+            }
           }
-          if (flags === n && covered.length > 0) covered.forEach(k => safe.add(k));
+          const remainingMines = n - flagCount;
+          if (remainingMines > 0 && hidden.length === remainingMines) {
+            for (const { r: nr, c: nc } of hidden) {
+              if (gameState.flagsPlaced < gameState.mineCount) {
+                toggleFlag(nr, nc);
+                playSFX('flag');
+              }
+            }
+            return; 
+          }
         }
       }
-
-      if (safe.size > 0) {
-        for (const key of safe) {
-          const [rStr, cStr] = key.split(',');
-          const r = parseInt(rStr, 10), c = parseInt(cStr, 10);
-          if (gameState.status !== 'playing') break;
-          if (isCovered(r, c) && !isFlagged(r, c)) {
-            revealCell(r, c, /*fromAI*/ true);
-          }
-        }
-        return;
-      }
-
-      let candidates = [];
       for (let r = 0; r < GRID_SIZE; r++) {
         for (let c = 0; c < GRID_SIZE; c++) {
-          if (!isCovered(r, c) || isFlagged(r, c)) continue;
-          const neighbors = getNeighbors(r, c);
-          let riskSum = 0, contrib = 0;
-          for (const { r: nr, c: nc } of neighbors) {
-            const n = getNumberAt(nr, nc);
-            if (n === null) continue;
-            const nn = getNeighbors(nr, nc);
-            let flags = 0, cov = 0;
-            for (const { r: xr, c: xc } of nn) {
-              if (isFlagged(xr, xc)) flags++;
-              else if (isCovered(xr, xc)) cov++;
+          const n = getNumberAt(r, c);
+          if (n === null || n === 0) continue;
+          const neigh = getNeighbors(r, c);
+          let flagCount = 0;
+          const hidden = [];
+          for (const { r: nr, c: nc } of neigh) {
+            if (isFlagged(nr, nc)) {
+              flagCount++;
+            } else if (isCovered(nr, nc)) {
+              hidden.push({ r: nr, c: nc });
             }
-            const remaining = n - flags;
-            if (cov > 0 && remaining >= 0) { riskSum += remaining / cov; contrib++; }
           }
-          const risk = contrib > 0 ? (riskSum / contrib) : 1.0;
-          candidates.push({ r, c, risk });
+          if (flagCount === n && hidden.length > 0) {
+            for (const { r: nr, c: nc } of hidden) {
+              if (gameState.status !== 'playing') break;
+              revealCell(nr, nc, /*fromAI*/ true);
+            }
+            return;
+          }
         }
       }
-
-      if (candidates.length === 0) return;
-
-      candidates.sort((a, b) => a.risk - b.risk);
-      const bestRisk = candidates[0].risk;
-      const bestGroup = candidates.filter(x => Math.abs(x.risk - bestRisk) < 1e-9);
-      const pick = bestGroup[(Math.random() * bestGroup.length) | 0];
-      revealCell(pick.r, pick.c, /*fromAI*/ true);
+      const allHidden = [];
+      for (let r = 0; r < GRID_SIZE; r++) {
+        for (let c = 0; c < GRID_SIZE; c++) {
+          if (isCovered(r, c) && !isFlagged(r, c)) {
+            allHidden.push({ r, c });
+          }
+        }
+      }
+      if (allHidden.length > 0) {
+        const pick = allHidden[Math.floor(Math.random() * allHidden.length)];
+        revealCell(pick.r, pick.c, /*fromAI*/ true);
+      }
     }
 
     // --- HARD AI (cheats): always uncover a safe cell (never detonates) ---
