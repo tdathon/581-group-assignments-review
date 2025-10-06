@@ -367,6 +367,7 @@
       gameState.board.forEach(row => row.forEach(cell => {
         if (cell.isMine) cell.isRevealed = true;
       }));
+      // --- SFX: win/lose (added, no logic change) ---
       playSFX(isWin ? 'win' : 'lose');
       updateUI();
     }
@@ -514,7 +515,10 @@
       if (!cellElement || gameState.status !== 'playing') return;
       if (gameState.watchMode) return;
       if (gameState.aiMode !== 'none' && (gameState.aiBusy || gameState.nextToMove !== 'user')) return;
+
+      // --- SFX: user clicked a tile (added, no logic change) ---
       playSFX('click');
+
       const row = parseInt(cellElement.dataset.row, 10);
       const col = parseInt(cellElement.dataset.col, 10);
       if (gameState.firstClick) {
@@ -539,11 +543,17 @@
       if (gameState.aiMode !== 'none' && (gameState.aiBusy || gameState.nextToMove !== 'user')) return;
       const row = parseInt(cellElement.dataset.row, 10);
       const col = parseInt(cellElement.dataset.col, 10);
+
+      // capture state before toggling to know if a flag was actually placed
       const wasFlagged = gameState.board[row][col].isFlagged;
+
       toggleFlag(row, col);
+
+      // --- SFX: flag placed (added, no logic change) ---
       if (!wasFlagged && gameState.board[row][col].isFlagged) {
         playSFX('flag');
       }
+
       updateUI();
     }
 
@@ -593,18 +603,13 @@
       revealCell(pick.r, pick.c, true);
     }
 
-    // medium AI: basic inference passes, then random fallback
+    // --- MEDIUM AI ---
+    // Rule 1: If number of hidden neighbors equals cell's number (minus flags), flag all hidden neighbors
+    // Rule 2: If number of flagged neighbors equals cell's number, open all other hidden neighbors
+    // Else: Pick a random hidden cell
     function aiMediumMove() {
-      if (gameState.firstClick) {
-        const startRow = Math.floor(GRID_SIZE / 2);
-        const startCol = Math.floor(GRID_SIZE / 2);
-        gameState.firstClick = false;
-        placeMines(startRow, startCol);
-        calculateAdjacentMines();
-        revealCell(startRow, startCol, true);
-        return;
-      }
-      // pass 1: if number - flags equals hidden neighbors, flag those hidden
+      if (gameState.firstClick) return;
+
       for (let r = 0; r < GRID_SIZE; r++) {
         for (let c = 0; c < GRID_SIZE; c++) {
           const n = getNumberAt(r, c);
@@ -613,8 +618,11 @@
           let flagCount = 0;
           const hidden = [];
           for (const { r: nr, c: nc } of neigh) {
-            if (isFlagged(nr, nc)) flagCount++;
-            else if (isCovered(nr, nc)) hidden.push({ r: nr, c: nc });
+            if (isFlagged(nr, nc)) {
+              flagCount++;
+            } else if (isCovered(nr, nc)) {
+              hidden.push({ r: nr, c: nc });
+            }
           }
           const remainingMines = n - flagCount;
           if (remainingMines > 0 && hidden.length === remainingMines) {
@@ -624,11 +632,10 @@
                 playSFX('flag');
               }
             }
-            return;
+            return; 
           }
         }
       }
-      // pass 2: if all mines are flagged, reveal remaining hidden neighbors
       for (let r = 0; r < GRID_SIZE; r++) {
         for (let c = 0; c < GRID_SIZE; c++) {
           const n = getNumberAt(r, c);
@@ -637,28 +644,32 @@
           let flagCount = 0;
           const hidden = [];
           for (const { r: nr, c: nc } of neigh) {
-            if (isFlagged(nr, nc)) flagCount++;
-            else if (isCovered(nr, nc)) hidden.push({ r: nr, c: nc });
+            if (isFlagged(nr, nc)) {
+              flagCount++;
+            } else if (isCovered(nr, nc)) {
+              hidden.push({ r: nr, c: nc });
+            }
           }
           if (flagCount === n && hidden.length > 0) {
             for (const { r: nr, c: nc } of hidden) {
               if (gameState.status !== 'playing') break;
-              revealCell(nr, nc, true);
+              revealCell(nr, nc, /*fromAI*/ true);
             }
             return;
           }
         }
       }
-      // fallback: random hidden unflagged cell
       const allHidden = [];
       for (let r = 0; r < GRID_SIZE; r++) {
         for (let c = 0; c < GRID_SIZE; c++) {
-          if (isCovered(r, c) && !isFlagged(r, c)) allHidden.push({ r, c });
+          if (isCovered(r, c) && !isFlagged(r, c)) {
+            allHidden.push({ r, c });
+          }
         }
       }
       if (allHidden.length > 0) {
         const pick = allHidden[Math.floor(Math.random() * allHidden.length)];
-        revealCell(pick.r, pick.c, true);
+        revealCell(pick.r, pick.c, /*fromAI*/ true);
       }
     }
 
