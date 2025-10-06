@@ -604,74 +604,86 @@
     }
 
     // --- MEDIUM AI ---
-    // Rule 1: If number of hidden neighbors equals cell's number (minus flags), flag all hidden neighbors
-    // Rule 2: If number of flagged neighbors equals cell's number, open all other hidden neighbors
-    // Else: Pick a random hidden cell
-    function aiMediumMove() {
-      if (gameState.firstClick) return;
+  // Rule 1: If number - flags == hidden, flag all hidden
+  // Rule 2: If flags == number, reveal all remaining hidden
+  // Else: pick a random hidden, unflagged cell
+  function aiMediumMove() {
+    // Make a deliberate first move so the board initializes
+    if (gameState.firstClick) {
+      const startRow = Math.floor(GRID_SIZE / 2);
+      const startCol = Math.floor(GRID_SIZE / 2);
+      gameState.firstClick = false;
+      placeMines(startRow, startCol);
+      calculateAdjacentMines();
+      revealCell(startRow, startCol, /*fromAI*/ true);
+      return;
+    }
 
-      for (let r = 0; r < GRID_SIZE; r++) {
-        for (let c = 0; c < GRID_SIZE; c++) {
-          const n = getNumberAt(r, c);
-          if (n === null || n === 0) continue;
-          const neigh = getNeighbors(r, c);
-          let flagCount = 0;
-          const hidden = [];
-          for (const { r: nr, c: nc } of neigh) {
-            if (isFlagged(nr, nc)) {
-              flagCount++;
-            } else if (isCovered(nr, nc)) {
-              hidden.push({ r: nr, c: nc });
-            }
-          }
-          const remainingMines = n - flagCount;
-          if (remainingMines > 0 && hidden.length === remainingMines) {
-            for (const { r: nr, c: nc } of hidden) {
-              if (gameState.flagsPlaced < gameState.mineCount) {
-                toggleFlag(nr, nc);
-                playSFX('flag');
-              }
-            }
-            return; 
-          }
+    // PASS 1: Flag when certain
+    for (let r = 0; r < GRID_SIZE; r++) {
+      for (let c = 0; c < GRID_SIZE; c++) {
+        const n = getNumberAt(r, c);
+        if (n === null || n === 0) continue;
+
+        const neigh = getNeighbors(r, c);
+        let flagCount = 0;
+        const hidden = [];
+
+        for (const { r: nr, c: nc } of neigh) {
+          if (isFlagged(nr, nc)) flagCount++;
+          else if (isCovered(nr, nc)) hidden.push({ r: nr, c: nc });
         }
-      }
-      for (let r = 0; r < GRID_SIZE; r++) {
-        for (let c = 0; c < GRID_SIZE; c++) {
-          const n = getNumberAt(r, c);
-          if (n === null || n === 0) continue;
-          const neigh = getNeighbors(r, c);
-          let flagCount = 0;
-          const hidden = [];
-          for (const { r: nr, c: nc } of neigh) {
-            if (isFlagged(nr, nc)) {
-              flagCount++;
-            } else if (isCovered(nr, nc)) {
-              hidden.push({ r: nr, c: nc });
+
+        const remainingMines = n - flagCount;
+        if (remainingMines > 0 && hidden.length === remainingMines) {
+          for (const { r: nr, c: nc } of hidden) {
+            if (gameState.flagsPlaced < gameState.mineCount) {
+              toggleFlag(nr, nc);
+              playSFX('flag');
             }
           }
-          if (flagCount === n && hidden.length > 0) {
-            for (const { r: nr, c: nc } of hidden) {
-              if (gameState.status !== 'playing') break;
-              revealCell(nr, nc, /*fromAI*/ true);
-            }
-            return;
-          }
+          return;
         }
-      }
-      const allHidden = [];
-      for (let r = 0; r < GRID_SIZE; r++) {
-        for (let c = 0; c < GRID_SIZE; c++) {
-          if (isCovered(r, c) && !isFlagged(r, c)) {
-            allHidden.push({ r, c });
-          }
-        }
-      }
-      if (allHidden.length > 0) {
-        const pick = allHidden[Math.floor(Math.random() * allHidden.length)];
-        revealCell(pick.r, pick.c, /*fromAI*/ true);
       }
     }
+
+    // PASS 2: Reveal safe neighbors when all mines are flagged
+    for (let r = 0; r < GRID_SIZE; r++) {
+      for (let c = 0; c < GRID_SIZE; c++) {
+        const n = getNumberAt(r, c);
+        if (n === null || n === 0) continue;
+
+        const neigh = getNeighbors(r, c);
+        let flagCount = 0;
+        const hidden = [];
+
+        for (const { r: nr, c: nc } of neigh) {
+          if (isFlagged(nr, nc)) flagCount++;
+          else if (isCovered(nr, nc)) hidden.push({ r: nr, c: nc });
+        }
+
+        if (flagCount === n && hidden.length > 0) {
+          for (const { r: nr, c: nc } of hidden) {
+            if (gameState.status !== 'playing') break;
+            revealCell(nr, nc, /*fromAI*/ true);
+          }
+          return;
+        }
+      }
+    }
+
+    // FALLBACK: Random hidden, unflagged cell
+    const allHidden = [];
+    for (let r = 0; r < GRID_SIZE; r++) {
+      for (let c = 0; c < GRID_SIZE; c++) {
+        if (isCovered(r, c) && !isFlagged(r, c)) allHidden.push({ r, c });
+      }
+    }
+    if (allHidden.length > 0) {
+      const pick = allHidden[Math.floor(Math.random() * allHidden.length)];
+      revealCell(pick.r, pick.c, /*fromAI*/ true);
+    }
+  }
 
     // hard AI: placeholder approach that avoids flagged/revealed and assumes safe pool
     function aiHardMove() {
